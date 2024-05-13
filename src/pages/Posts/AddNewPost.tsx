@@ -18,6 +18,7 @@ const AddNewPost = () => {
 
   const navigate = useNavigate();
   const backendURL = import.meta.env.VITE_BACKEND_URL;
+  
   const handleInputChange = (index : any, value : any) => {
     const newInputs = [...inputs];
     newInputs[index] = value;

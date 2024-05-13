@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import CommentSection from "./CommentSection";
-import {useNavigate} from 'react-router-dom'
-
+import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 interface PostData {
   title?: string;
@@ -19,8 +19,6 @@ interface PostData {
   links?: string[];
 }
 
-
-
 const DetailPost = () => {
   const user = useSelector((state: any) => state.user);
   const navigate = useNavigate();
@@ -30,11 +28,11 @@ const DetailPost = () => {
   const UserId = localUser._id;
   const { id } = useParams();
   const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const [saved, setSaved] = useState(false);
 
   const handleEdit = () => {
-    navigate(`/editPost/${id}`)
-  }
-
+    navigate(`/editPost/${id}`);
+  };
 
   useEffect(() => {
     axios
@@ -46,32 +44,68 @@ const DetailPost = () => {
       })
       .then((response) => {
         console.log(response.data);
-        // setAuthor(response.data.author);
+        if(response.data.savedBy.length > 0){
+          setSaved(true)
+        }
         setData(response.data);
       })
       .catch((error) => {
         console.log(error);
       });
   }, []);
+
+  const handleSave = (e: any) => {
+    console.log("user token", user.token);
+    e.preventDefault();
+    axios
+      .post(
+        `${backendURL}/api/posts/savepost/${id}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      )
+      .then((res) => {
+        console.log("res", res);
+        if(res.data.message == 'Saved'){
+          toast.success("Post Saved Successfully")
+          setSaved(true);
+        }
+        else if(res.data.message === 'UnSaved'){
+          toast.success("Post UnSaved Successfully")
+          setSaved(false);        
+        }
+      })
+      .catch((err: any) => {
+        console.log("err", err);
+        toast.error(err.response.data.message)
+        setSaved(false)
+      });
+  };
+
   return (
     <div>
       <div className="bg-white">
         <div className="pt-6">
           <div className="flex mx-auto mt-6 max-w-2xl sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-3 lg:gap-x-8 lg:px-8">
             <div className=" flex flex-row aspect-h-4 aspect-w-3 rounded-lg lg:block">
-              {data && data.pics && data.pics.length > 0 && (
+              {data &&
+                data.pics &&
+                data.pics.length > 0 &&
                 data.pics.map((pic: any) => {
                   return (
                     <div className="flex">
-                    <img
-                      src={pic}
-                      alt="Post Pics"
-                      className="h-full w-full object-cover object-center"
-                    />
+                      <img
+                        src={pic}
+                        alt="Post Pics"
+                        className="h-full w-full object-cover object-center"
+                      />
                     </div>
                   );
-                })
-              )}
+                })}
               {/* <img
                 src={data && data.pics[0]}
                 alt="Two each of gray, white, and black shirts laying flat."
@@ -156,7 +190,7 @@ const DetailPost = () => {
                   {UserId === data.author && (
                     <button
                       type="submit"
-                      onClick = {handleEdit}
+                      onClick={handleEdit}
                       className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                       Edit Post
@@ -167,23 +201,42 @@ const DetailPost = () => {
                 <div className="mt-10">
                   {UserId !== data.author && (
                     <a href={`/chats/${data.author}`}>
-                    <button
-                      type="submit"
-                      
-                      className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                      Chat
-                    </button>
+                      <button
+                        type="submit"
+                        className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      >
+                        Chat
+                      </button>
                     </a>
-                  )} 
+                  )}
                 </div>
-
-                <button
-                  type="submit"
-                  className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Want to Contribute
-                </button>
+                <div className="flex space-x-5">
+                  <button
+                    type="submit"
+                    className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    Contribute
+                  </button>
+                  {
+                    saved ? (
+                      <button
+                    type="submit"
+                    className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    onClick={handleSave}
+                  >
+                    Unsave Post
+                  </button>
+                    ) : (
+                      <button
+                    type="submit"
+                    className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    onClick={handleSave}
+                  >
+                    Save for later
+                  </button>
+                    )
+                  }
+                </div>
               </form>
             </div>
 
